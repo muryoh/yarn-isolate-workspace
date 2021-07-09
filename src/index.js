@@ -32,6 +32,7 @@ const {
   workspacesFolder,
   srcLessFolder,
   srcLessFolderProd,
+  yarnV2,
 } = require('./params');
 const { createYarnLock } = require('./create-yarn-lock');
 
@@ -168,6 +169,15 @@ function createMainJsonFile() {
       ...workspaceData.pkgJson.dependencies,
     };
   }
+  if (yarnV2) {
+    // Fix dependencies to other workspaces
+    for (const dep in workspaceData.pkgJson.dependencies) {
+      const workspace = projectWorkspaces[dep];
+      if (workspace) {
+        workspaceData.pkgJson.dependencies[dep] = `workspace:${path.relative(isolateFolder, workspace.newLocation)}`;
+      }
+    }
+  }
 
   if (!jsonFileProdDisable) {
     workspaceData.pkgJson.devDependencies = {};
@@ -179,6 +189,11 @@ function createMainJsonFile() {
     ...devWorkspaces.map(name => path.relative(isolateFolder, projectWorkspaces[name].newLocation)),
   );
 
+  // Copy custom resolutions from root package. Ours have priority
+  if (rootPacakgeJson.resolutions) {
+    workspaceData.pkgJson.resolutions = { ...rootPacakgeJson.resolutions, ...workspaceData.pkgJson.resolutions };
+  }
+
   if (!jsonFileDisable) {
     fs.writeFileSync(path.join(isolateFolder, 'package.json'), JSON.stringify(workspaceData.pkgJson, null, 2));
   }
@@ -186,13 +201,31 @@ function createMainJsonFile() {
 
 function createYarnRc() {
   if (yarnrcDisable) return;
-  const yarnrcFileSrc = path.join(rootDir, '.yarnrc');
-  const yarnrcFileDest = path.join(isolateFolder, '.yarnrc');
-  if (!yarnrcGenerate && fs.existsSync(yarnrcFileSrc)) {
+  if (yarnV2) {
+    const yarnrcFileSrc = path.join(rootDir, '.yarnrc.yml');
+    const yarnrcFileDest = path.join(isolateFolder, '.yarnrc.yml');
+    if (yarnrcGenerate) {
+      throw new Error('Generating a .yarn.yml file for Yarn v2 is unsupported at the moment');
+    }
+    if (!fs.existsSync(yarnrcFileSrc)) {
+      throw new Error(`${yarnrcFileSrc} does not exist`);
+    }
     fs.copyFileSync(yarnrcFileSrc, yarnrcFileDest);
-    return;
+    const yarnFolderSrc = path.join(rootDir, '.yarn');
+    const yarnFolderDest = path.join(isolateFolder, '.yarn');
+    const files = glob.sync('{releases,plugins}/*', { cwd: yarnFolderSrc, absolute: true, ignore: ignorePattterns });
+    files.forEach(file =>
+      fse.copySync(file, path.join(yarnFolderDest, path.relative(workspaceData.location, file)), { preserveTimestamps: true }),
+    );
+  } else {
+    const yarnrcFileSrc = path.join(rootDir, '.yarnrc');
+    const yarnrcFileDest = path.join(isolateFolder, '.yarnrc');
+    if (!yarnrcGenerate && fs.existsSync(yarnrcFileSrc)) {
+      fs.copyFileSync(yarnrcFileSrc, yarnrcFileDest);
+      return;
+    }
+    fs.writeFileSync(yarnrcFileDest, 'workspaces-experimental true');
   }
-  fs.writeFileSync(yarnrcFileDest, 'workspaces-experimental true');
 }
 
 async function start() {
@@ -202,7 +235,7 @@ async function start() {
   copySrcLessProdToNewLocation();
   createMainJsonFile();
   createYarnRc();
-  createYarnLock({ yarnLockDisable, rootDir, projectWorkspaces, srcLessSubDev, workspaceData, isolateFolder });
+  createYarnLock({ yarnLockDisable, rootDir, projectWorkspaces, srcLessSubDev, workspaceData, isolateFolder, yarnV2 });
 }
 
 start();

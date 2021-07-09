@@ -19,6 +19,7 @@ if (getParam('--help')) printHelp();
 const yarnrcDisable = getParam('--yarnrc-disable');
 const yarnrcGenerate = getParam('--yarnrc-generate');
 const yarnLockDisable = getParam('--yarn-lock-disable');
+const yarnV2 = getParam('--yarn-v2', false);
 const srcLessDisable = getParam('--src-less-disable');
 const srcLessSubDev = getParam('--src-less-sub-dev-deps');
 const includeRootDeps = getParam('--include-root-deps');
@@ -57,9 +58,16 @@ const rootDir = getWorkspacesRoot(projectRoot);
 
 const rootPacakgeJson = JSON.parse(fs.readFileSync(path.join(rootDir, 'package.json'), 'utf-8'));
 
-const projectWorkspaces = JSON.parse(
-  execSync('yarn workspaces --silent info', { cwd: rootDir, encoding: 'utf8' }).toString().replace(`[2K[1G`, ''),
-);
+const projectWorkspaces = yarnV2
+  ? JSON.parse(
+      '[' +
+        execSync('yarn workspaces list -v --json', { cwd: rootDir, encoding: 'utf8' }).toString().trim().split('\n').join(',\n') +
+        ']',
+    ).reduce(function (map, obj) {
+      map[obj.name] = obj;
+      return map;
+    }, {})
+  : JSON.parse(execSync('yarn workspaces --silent info', { cwd: rootDir, encoding: 'utf8' }).toString().replace(`[2K[1G`, ''));
 
 const workspaceName = (function getWorkspaceName() {
   const [targetWorkspaceName] = cliParams;
@@ -82,6 +90,7 @@ const workspaceName = (function getWorkspaceName() {
 })();
 
 for (let key in projectWorkspaces) {
+  projectWorkspaces[key].relativeLocation = projectWorkspaces[key].location;
   projectWorkspaces[key].location = path.join(rootDir, projectWorkspaces[key].location);
   projectWorkspaces[key].pkgJsonLocation = path.join(projectWorkspaces[key].location, 'package.json');
   projectWorkspaces[key].pkgJson = JSON.parse(fs.readFileSync(projectWorkspaces[key].pkgJsonLocation));
@@ -201,4 +210,5 @@ module.exports = {
   srcLessFolder,
   srcLessFolderProd,
   includeRootDeps,
+  yarnV2,
 };

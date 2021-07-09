@@ -1,3 +1,8 @@
+Forked from https://github.com/Madvinking/yarn-isolate-workspace :pray:
+Hacked in Yarn v2 with node linker support as I needed it to work with Firebase functions deployment from a monorepo using Yarn v2 workspaces (https://github.com/firebase/firebase-tools/issues/653) and bundling was not an option, or at least not fixing everything.
+
+Only tested on my setup, not promising anything:)
+
 # yarn-isolate-workspace
 
 ![npm](https://img.shields.io/npm/v/yarn-isolate-workspace)

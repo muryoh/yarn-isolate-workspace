@@ -1,5 +1,5 @@
 {
-  "name": "yarn-isolate-workspace",
+  "name": "yarn-v2-isolate-workspace",
   "version": "0.2.3",
   "description": "will isolate one yarn workspace",
   "main": "src/index.js",
@@ -24,7 +24,7 @@
   "author": "Nir winkler <madvinking@gmail.com>",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Madvinking/yarn-isolate-workspace.git"
+    "url": "https://github.com/muryoh/yarn-isolate-workspace.git"
   },
   "publishConfig": {
     "access": "public"
@@ -38,13 +38,14 @@
     "@yarnpkg/lockfile": "^1.1.0",
     "fs-extra": "^9.1.0",
     "fs-readdir-recursive": "1.1.0",
-    "glob": "7.1.6"
+    "glob": "7.1.6",
+    "js-yaml": "^4.1.0"
   },
   "devDependencies": {
-    "husky": "4.3.0",
     "eslint": "^7.12.1",
     "eslint-config-prettier": "^6.15.0",
     "eslint-plugin-prettier": "^3.1.4",
+    "husky": "4.3.0",
     "jest": "26.6.1",
     "nodemon": "2.0.6",
     "prettier": "^2.1.2"
